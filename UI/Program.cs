@@ -1,0 +1,3 @@
+﻿using UI;
+
+MainMenu.StoreMenu();
