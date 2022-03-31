@@ -1,6 +1,6 @@
 namespace Models;
 
-public class Store 
+public class Store
 {
     private readonly string _location;
 
@@ -8,13 +8,16 @@ public class Store
 
     public List<Product> Inventory;
 
-    public Store(string location) {
+    public Store(string location)
+    {
         _location = location; // EDITME: Add location from database
     }
 
-    public void DisplayStock() {
-        foreach(Product product in Inventory) {
-            Console.WriteLine($"{product.Name} | {product.Price} | {product.Quantity}");
+    public void DisplayStock()
+    {
+        foreach (Product product in Inventory)
+        {
+            Console.WriteLine($"{product.Name} | ${product.Price} | {product.Quantity}");
         }
     }
 
