@@ -76,9 +76,9 @@ public class MainMenu
         Console.WriteLine("[4] Show cart's contents");
         Console.WriteLine("[5] Checkout");
         Console.WriteLine("[6] Change store location");
-        Console.WriteLine("[7] Logout");
+        Console.WriteLine("[x] Logout");
 
-        string? answer = Console.ReadLine().Trim() ?? "";
+        string? answer = Console.ReadLine().Trim().ToUpper() ?? "";
 
         switch (answer)
         {
