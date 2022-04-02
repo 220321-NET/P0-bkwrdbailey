@@ -2,16 +2,15 @@ namespace Models;
 
 public class Store
 {
-    private readonly string _location;
+    public int Id { get; set; }
+
+
+    public string Name { get; set; }
+    public string Address { get; set; }
 
     private List<Order> OrderHistory;
 
     public List<Product> Inventory;
-
-    public Store(string location)
-    {
-        _location = location; // EDITME: Add location from database
-    }
 
     public void DisplayStock()
     {

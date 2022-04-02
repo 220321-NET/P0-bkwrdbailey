@@ -20,17 +20,23 @@ public class MainMenu
     LoginRegister:
         Console.WriteLine("[1] Login");
         Console.WriteLine("[2] Register");
+        Console.WriteLine("[x] Exit");
 
-        int answer = Convert.ToInt32(Console.ReadLine());
+        string? answer = Console.ReadLine().Trim() ?? "";
+        bool isLoggedIn = false;
 
-        if (answer == 1)
+        if (answer == "1")
         {
-            AccountHandling.Login();
+            isLoggedIn = Login();
         }
-        else if (answer == 2)
+        else if (answer == "2")
         {
-            AccountHandling.Register();
+            isLoggedIn = Register();
 
+        }
+        else if (answer.ToLower() == "x")
+        {
+            return;
         }
         else
         {
@@ -38,20 +44,33 @@ public class MainMenu
             goto LoginRegister;
         }
 
+        if (!isLoggedIn)
+        {
+            return;
+        }
+
+        Store currentStore = new Store();
+        List<Store> stores = _bl.GetAllStores();
+
     StoreLocation:
         Console.WriteLine("We have two stores currently that you can shop from\nWhich one would you like to shop at?"); // Maybe change later if I want to add more than two store locations
-        Console.WriteLine("[1] First Location");
-        Console.WriteLine("[2] Second Location");
 
-        answer = Convert.ToInt32(Console.ReadLine());
-
-        if (answer == 1)
+        int i = 1;
+        foreach (Store store in stores)
         {
-            // Store firstStore = ; // Add first store instance
+            Console.WriteLine($"[{i}] {store.Name} | {store.Address}");
+            i++;
         }
-        else if (answer == 2)
+
+        string? storeAnswer = Console.ReadLine().Trim() ?? "";
+
+        if (storeAnswer == "1")
         {
-            // Store secondStore = ;   // Add second store instance
+            currentStore = stores[0];
+        }
+        else if (storeAnswer == "2")
+        {
+            currentStore = stores[1];
         }
         else
         {
@@ -59,7 +78,7 @@ public class MainMenu
             goto StoreLocation;
         }
 
-        string result = Menu(/*Store Instance*/);
+        string result = Menu(currentStore);
 
         if (result == "6")
         {
@@ -67,7 +86,7 @@ public class MainMenu
         }
     }
 
-    private static string Menu(/*Store Instance*/)
+    private string Menu(Store currentStore)
     {
     MenuChoices:
         Console.WriteLine("[1] See inventory");
@@ -76,14 +95,14 @@ public class MainMenu
         Console.WriteLine("[4] Show cart's contents");
         Console.WriteLine("[5] Checkout");
         Console.WriteLine("[6] Change store location");
-        Console.WriteLine("[7] Logout");
+        Console.WriteLine("[x] Logout");
 
-        string? answer = Console.ReadLine().Trim() ?? "";
+        string? choice = Console.ReadLine().Trim() ?? "";
 
-        switch (answer)
+        switch (choice)
         {
             case "1":
-                // Loop through inventory of the specified store and display products
+                Inventory(currentStore);
                 break;
 
             case "2":
@@ -103,11 +122,11 @@ public class MainMenu
                 break;
 
             case "6":
-                return answer;
+                return choice;
 
             case "x":
                 Console.WriteLine("Logging out...");
-                return answer;
+                return choice;
 
             default:
                 Console.WriteLine("Invalid Input");
@@ -119,14 +138,115 @@ public class MainMenu
 
     }
 
-    private static void Checkout()
+    private bool Login()
+    {
+
+    Login:
+        Console.WriteLine("Enter your Username: ");
+        string? userName = Console.ReadLine().Trim() ?? "";
+
+        List<User> users = _bl.GetAllUsers();
+
+        foreach (User user in users)
+        {
+            if (user.UserName == userName)
+            {
+            Password:
+                Console.WriteLine("Enter you Password: ");
+                string? password = Console.ReadLine().Trim() ?? "";
+
+                if (user.Password == password)
+                {
+                    Console.WriteLine("Logging in...");
+                    return true;
+                }
+                else
+                {
+                    Console.WriteLine("Incorrect password...Try again? [Y/N]");
+                    string? innerResponse = Console.ReadLine().Trim().ToUpper() ?? "";
+
+                    if (innerResponse == "Y")
+                    {
+                        goto Password;
+                    }
+                }
+            }
+        }
+
+        Console.WriteLine("Could not find an account with that username.\nWould you like to try again or make an account?\n[1] Try Again\n[2] Register");
+        string? outerResponse = Console.ReadLine().Trim() ?? "";
+
+        if (outerResponse == "1")
+        {
+            goto Login;
+        }
+        else if (outerResponse == "2")
+        {
+            bool isRegistered = Register();
+            return isRegistered;
+        }
+
+        return false;
+
+    }
+
+    public bool Register()
+    {
+    Register:
+        Console.WriteLine("Enter a Username: ");
+        string? userName = Console.ReadLine().Trim() ?? "";
+
+        List<User> users = _bl.GetAllUsers();
+
+        foreach (User user in users)
+        {
+            if (user.UserName == userName)
+            {
+                Console.WriteLine("That username is already taken!\nTry Again?[Y/N]");
+                string? response = Console.ReadLine().Trim().ToUpper() ?? "";
+
+                if (response == "N")
+                {
+                    return false;
+                }
+                goto Register;
+            }
+        }
+
+        Console.WriteLine("Enter a Password");
+        string? password = Console.ReadLine().Trim() ?? "";
+
+        User newUser = new User();
+
+        newUser.UserName = userName;
+        newUser.Password = password;
+
+        _bl.AddUser(newUser);
+
+        return true;
+
+    }
+
+    private void Checkout()
     {
 
     }
 
-    private static void DisplayCart()
+    private void DisplayCart()
     {
 
+    }
+
+    private void Inventory(Store currentStore)
+    {
+        currentStore = _bl.GetStoreInventory(currentStore);
+        int i = 1;
+
+        foreach (Product item in currentStore.Inventory)
+        {
+            Console.WriteLine($"[{i}] ${item.Price} | {item.Name} | {item.Quantity} QTY.\n{item.Description}");
+            i++;
+        }
     }
 
 }
