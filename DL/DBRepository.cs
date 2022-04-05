@@ -103,7 +103,7 @@ public class DBRepository
             }
             else
             {
-                Customer customer = new Customer
+                User customer = new User
                 {
                     Id = id,
                     UserName = userName,
@@ -158,15 +158,88 @@ public class DBRepository
         SqlConnection connection = new SqlConnection(_connectionString);
         connection.Open();
 
-        SqlCommand cmd = new SqlCommand("INSERT INTO Users (UserName, Password) VALUES (@username, @password)", connection);
+        SqlCommand cmd = new SqlCommand("INSERT INTO Users(UserName, Password) OUTPUT INSERTED.Id VALUES(@username, @password)", connection);
 
         cmd.Parameters.AddWithValue("@username", userToAdd.UserName);
         cmd.Parameters.AddWithValue("@password", userToAdd.Password);
 
-        userToAdd.Id = (int)cmd.ExecuteScalar();
+        try
+        {
+            userToAdd.Id = (int)cmd.ExecuteScalar();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
 
         connection.Close();
 
         return userToAdd;
+    }
+
+    public void CreateOrder(Order order)
+    {
+        DateTime currentDate = DateTime.Now;
+        SqlConnection connection = new SqlConnection(_connectionString);
+        connection.Open();
+
+        SqlCommand cmd = new SqlCommand("INSERT INTO Orders(StoreFrontId, CustomerId, TotalCost, DateOrdered) OUTPUT INSERTED.Id VALUES (@storeId, @customerId, @totalCost, @dateOrdered)", connection);
+
+        cmd.Parameters.AddWithValue("@storeId", order.store.Id);
+        cmd.Parameters.AddWithValue("@customerId", order.customer.Id);
+        cmd.Parameters.AddWithValue("@totalCost", order.cart.GetTotalCost());
+        cmd.Parameters.AddWithValue("@dateOrdered", currentDate);
+
+        try
+        {
+            order.Id = (int)cmd.ExecuteScalar();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+
+        connection.Close();
+        CreateCart(order);
+    }
+
+    private void CreateCart(Order order)
+    {
+        SqlConnection connection = new SqlConnection(_connectionString);
+        connection.Open();
+        SqlCommand cmd;
+
+        foreach (Product product in order.cart.AllProducts())
+        {
+            cmd = new SqlCommand("INSERT INTO Cart (ProductId, Quantity, OrderId) OUTPUT INSERTED.Id VALUES (@productId, @quantity, @orderId)", connection);
+            cmd.Parameters.AddWithValue("@productId", product.Id);
+            cmd.Parameters.AddWithValue("@quantity", product.Quantity);
+            cmd.Parameters.AddWithValue("@orderId", order.Id);
+
+            int id = (int)cmd.ExecuteScalar();
+        }
+
+        connection.Close();
+
+        UpdateInventory(order);
+    }
+
+    private void UpdateInventory(Order order)
+    {
+        SqlConnection connection = new SqlConnection(_connectionString);
+        connection.Open();
+        SqlCommand cmd;
+
+        foreach (Product product in order.store.Inventory)
+        {
+            cmd = new SqlCommand("UPDATE Inventory SET Quantity = @quantity OUTPUT INSERTED.Id WHERE ProductId = @productId AND StoreFrontId = @storeFront", connection);
+            cmd.Parameters.AddWithValue("@quantity", product.Quantity);
+            cmd.Parameters.AddWithValue("@productId", product.Id);
+            cmd.Parameters.AddWithValue("@storeFront", order.store.Id);
+
+            int id = (int)cmd.ExecuteScalar();
+        }
+
+        connection.Close();
     }
 }

@@ -20,6 +20,10 @@ public class StoreBL
         return _repo.CreateUser(userToAdd);
     }
 
+    public void AddOrder(Order order) {
+        _repo.CreateOrder(order);
+    }
+
     public List<Store> GetAllStores()
     {
         return _repo.GetAllStores();

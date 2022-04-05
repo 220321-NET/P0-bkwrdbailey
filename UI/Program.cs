@@ -8,4 +8,4 @@ string connectionString = File.ReadAllText("./connectionString.txt");
 DBRepository repo = new DBRepository(connectionString);
 StoreBL bl = new StoreBL(repo);
 
-new MainMenu(bl).StoreMenu();
+new MainMenu(bl).LoginMenu();

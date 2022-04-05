@@ -3,8 +3,7 @@ namespace Models;
 public class Order {
 
     public int Id { get; set; }
-    public Customer customer;
-    public List<Product> allProducts;
-
-    public float totalCost;
+    public User customer;
+    public Cart cart = new Cart();
+    public Store store = new Store();
 }
