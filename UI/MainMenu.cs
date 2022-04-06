@@ -54,11 +54,13 @@ public class MainMenu
             {
                 Employee employee = (Employee)user;
                 new EmployeeMenu(_bl, employee).Menu();
+                Console.WriteLine("==================================================================");
             }
             else
             {
                 User customer = user;
                 new CustomerMenu(_bl, customer).StoreMenu();
+                Console.WriteLine("==================================================================");
             }
         }
         Console.WriteLine("Logging out...");

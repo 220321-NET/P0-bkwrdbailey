@@ -21,7 +21,7 @@ public class CustomerMenu
         List<Store> stores = _bl.GetAllStores();
 
     StoreLocation:
-        Console.WriteLine("We have two stores currently that you can shop from\nWhich one would you like to shop at?"); // Maybe change later if I want to add more than two store locations
+        Console.WriteLine("Select a store to shop at or View your order history"); // Maybe change later if I want to add more than two store locations
 
         int i = 1;
         foreach (Store store in stores)
@@ -29,6 +29,9 @@ public class CustomerMenu
             Console.WriteLine($"[{i}] {store.Name} | {store.Address}");
             i++;
         }
+
+        Console.WriteLine($"[{i}] View Your Order History");
+        Console.WriteLine($"[{i + 1}] Logout");
 
         string? storeAnswer = Console.ReadLine().Trim() ?? "";
         Console.WriteLine("==================================================================");
@@ -40,6 +43,15 @@ public class CustomerMenu
         else if (storeAnswer == "2")
         {
             currentStore = stores[1];
+        }
+        else if (storeAnswer == "3")
+        {
+            ViewOrderHistory();
+            goto StoreLocation;
+        }
+        else if (storeAnswer == "x")
+        {
+            return;
         }
         else
         {
@@ -87,7 +99,7 @@ public class CustomerMenu
             case "3":
                 if (cart.IsCartEmpty())
                 {
-                    Console.WriteLine("There is nothing in the cart");
+                    Console.WriteLine("There is nothing in the cart to remove");
                     Console.WriteLine("==================================================================");
                 }
                 else
@@ -113,11 +125,20 @@ public class CustomerMenu
                 break;
 
             case "5":
-                bool HasCheckedOut = Checkout();
-
-                if (HasCheckedOut)
+                if (cart.IsCartEmpty())
                 {
-                    return "x";
+                    Console.WriteLine("There is nothing in the cart to checkout");
+                    Console.WriteLine("==================================================================");
+                }
+                else
+                {
+                    bool HasCheckedOut = Checkout();
+
+                    if (HasCheckedOut)
+                    {
+                        return "x";
+                    }
+                    Console.WriteLine("==================================================================");
                 }
                 break;
 
@@ -156,11 +177,9 @@ public class CustomerMenu
 
             default:
                 Console.WriteLine("Invalid Input");
-                goto MenuChoices;
+                break;
         }
-
         goto MenuChoices;
-
     }
 
     private void AddProduct()
@@ -248,5 +267,17 @@ public class CustomerMenu
     private void Inventory()
     {
         currentStore.DisplayStock();
+    }
+
+    private void ViewOrderHistory()
+    {
+        List<OrderHistory> userOrderHistory = _bl.GetOrderHistoryByUser(_user);
+
+        foreach (OrderHistory order in userOrderHistory)
+        {
+            Console.WriteLine($"{order.store.Name} | {order.store.Address}:\n${order.ItemPrice} | {order.ProductName} | {order.ItemQty} QTY. | {order.DateOrdered}");
+        }
+
+        Console.WriteLine("==================================================================");
     }
 }
