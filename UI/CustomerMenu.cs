@@ -1,5 +1,6 @@
 using Models;
 using BL;
+using Serilog;
 
 namespace UI;
 
@@ -20,6 +21,8 @@ public class CustomerMenu
     {
         List<Store> stores = _bl.GetAllStores();
 
+        Console.WriteLine("==================================================================");
+
     StoreLocation:
         Console.WriteLine("Select a store to shop at or View your order history"); // Maybe change later if I want to add more than two store locations
 
@@ -31,9 +34,9 @@ public class CustomerMenu
         }
 
         Console.WriteLine($"[{i}] View Your Order History");
-        Console.WriteLine($"[{i + 1}] Logout");
+        Console.WriteLine($"[x] Logout");
 
-        string? storeAnswer = Console.ReadLine().Trim() ?? "";
+        string storeAnswer = Console.ReadLine().Trim();
         Console.WriteLine("==================================================================");
 
         if (storeAnswer == "1")
@@ -79,7 +82,7 @@ public class CustomerMenu
         Console.WriteLine("[6] Change store location");
         Console.WriteLine("[x] Logout");
 
-        string? choice = Console.ReadLine().Trim() ?? "";
+        string choice = Console.ReadLine().Trim();
         Console.WriteLine("==================================================================");
 
         switch (choice)
@@ -91,7 +94,6 @@ public class CustomerMenu
                 break;
 
             case "2":
-                Inventory();
                 AddProduct();
                 Console.WriteLine("==================================================================");
                 break;
@@ -151,7 +153,7 @@ public class CustomerMenu
                 {
                 ChangeStore:
                     Console.WriteLine("There are items in your cart\nAre you sure you want to change the store? [Y/N]");
-                    string? decision = Console.ReadLine().Trim().ToUpper() ?? "";
+                    string decision = Console.ReadLine().Trim().ToUpper();
 
                     if (decision == "Y")
                     {
@@ -184,17 +186,73 @@ public class CustomerMenu
 
     private void AddProduct()
     {
-        Console.WriteLine("Which item would you like to add:");
-        string? choice = Console.ReadLine().Trim() ?? "";
+    ItemToAdd:
+        Inventory();
+        Console.WriteLine("==================================================================");
 
-        int productId = Convert.ToInt32(choice);
+        Console.WriteLine("Which item would you like to add:");
+        string choice = Console.ReadLine().Trim();
+        int productId;
+
+        Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Debug()
+            .WriteTo.File("../Logs/ExceptionLogging.txt", rollingInterval: RollingInterval.Day)
+            .CreateLogger();
+
+        try
+        {
+            productId = Convert.ToInt32(choice);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Invalid Input");
+            Log.Information($"Exception Caught: {e}");
+            goto ItemToAdd;
+        }
+        finally
+        {
+            Log.CloseAndFlush();
+        }
+
+        if (productId > currentStore.Inventory.Count || productId < 0)
+        {
+            Console.WriteLine("Invalid Input");
+            goto ItemToAdd;
+        }
 
         foreach (Product product in currentStore.Inventory)
         {
             if (product.Id == productId)
             {
+            AmtToAdd:
                 Console.WriteLine("How many of this item would you like:");
-                int amount = Convert.ToInt32(Console.ReadLine());
+                int amount;
+
+                Log.Logger = new LoggerConfiguration()
+                    .MinimumLevel.Debug()
+                    .WriteTo.File("../Logs/ExceptionLogging.txt", rollingInterval: RollingInterval.Day)
+                    .CreateLogger();
+
+                try
+                {
+                    amount = Convert.ToInt32(Console.ReadLine());
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Invalid Input");
+                    Log.Information($"Exception Caught: {e}");
+                    goto AmtToAdd;
+                }
+                finally
+                {
+                    Log.CloseAndFlush();
+                }
+
+                if (amount > product.Quantity)
+                {
+                    Console.WriteLine("Requested amount is higher than its quantity");
+                    goto AmtToAdd;
+                }
 
                 Product item = new Product();
 
@@ -219,14 +277,57 @@ public class CustomerMenu
 
     private void RemoveProduct()
     {
+    ItemToRemove:
         cart.CartContents();
+        Console.WriteLine("==================================================================");
 
         Console.WriteLine("Which item would you like removed:");
-        string? choice = Console.ReadLine().Trim() ?? "";
+        string choice = Console.ReadLine().Trim();
+        int numChoice;
 
-        int numChoice = Convert.ToInt32(choice);
+        Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Debug()
+            .WriteTo.File("../Logs/ExceptionLogging.txt", rollingInterval: RollingInterval.Day)
+            .CreateLogger();
 
-        Product product = cart.RemoveItem(numChoice - 1);
+        try
+        {
+            numChoice = Convert.ToInt32(choice);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Invalid Input");
+            Log.Information($"Exception Caught: {e}");
+            goto ItemToRemove;
+        }
+        finally
+        {
+            Log.CloseAndFlush();
+        }
+
+        Product product;
+
+        Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Debug()
+            .WriteTo.File("../Logs/ExceptionLogging.txt", rollingInterval: RollingInterval.Day)
+            .CreateLogger();
+
+        try
+        {
+            product = cart.RemoveItem(numChoice - 1);
+
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Invalid Input");
+            Log.Information($"Exception Caught: {e}");
+            goto ItemToRemove;
+        }
+        finally
+        {
+            Log.CloseAndFlush();
+        }
+
 
         foreach (Product item in currentStore.Inventory)
         {
@@ -241,8 +342,10 @@ public class CustomerMenu
     {
     CheckoutChoice:
         cart.CartContents();
+        Console.WriteLine("==================================================================");
+
         Console.WriteLine("Are you sure you are ready to checkout? [Y/N]");
-        string? choice = Console.ReadLine().Trim().ToUpper() ?? "";
+        string choice = Console.ReadLine().Trim().ToUpper();
 
         if (choice == "Y")
         {
@@ -272,6 +375,13 @@ public class CustomerMenu
     private void ViewOrderHistory()
     {
         List<OrderHistory> userOrderHistory = _bl.GetOrderHistoryByUser(_user);
+
+        if (userOrderHistory.Count == 0)
+        {
+            Console.WriteLine("No Order history to show");
+            Console.WriteLine("==================================================================");
+            return;
+        }
 
         foreach (OrderHistory order in userOrderHistory)
         {

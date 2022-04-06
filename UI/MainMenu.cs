@@ -10,7 +10,6 @@ public class MainMenu
     public MainMenu(StoreBL bl)
     {
         _bl = bl;
-
     }
 
     public void LoginMenu()
@@ -22,7 +21,7 @@ public class MainMenu
         Console.WriteLine("[2] Register");
         Console.WriteLine("[x] Exit");
 
-        string? answer = Console.ReadLine().Trim() ?? "";
+        string answer = Console.ReadLine().Trim();
         User user = new User();
 
         if (answer == "1")
@@ -54,13 +53,11 @@ public class MainMenu
             {
                 Employee employee = (Employee)user;
                 new EmployeeMenu(_bl, employee).Menu();
-                Console.WriteLine("==================================================================");
             }
             else
             {
                 User customer = user;
                 new CustomerMenu(_bl, customer).StoreMenu();
-                Console.WriteLine("==================================================================");
             }
         }
         Console.WriteLine("Logging out...");
@@ -70,8 +67,8 @@ public class MainMenu
     {
 
     Login:
-        Console.WriteLine("Enter your Username: ");
-        string? userName = Console.ReadLine().Trim() ?? "";
+        Console.WriteLine("Enter your Username:\nWarning: case-sensitive");
+        string userName = Console.ReadLine().Trim();
 
         List<User> users = _bl.GetAllUsers();
 
@@ -81,7 +78,7 @@ public class MainMenu
             {
             Password:
                 Console.WriteLine("Enter you Password: ");
-                string? password = Console.ReadLine().Trim() ?? "";
+                string password = Console.ReadLine().Trim();
 
                 if (user.Password == password)
                 {
@@ -91,19 +88,31 @@ public class MainMenu
                 }
                 else
                 {
+                TryAgainAtmpt:
                     Console.WriteLine("Incorrect password...Try again? [Y/N]");
-                    string? innerResponse = Console.ReadLine().Trim().ToUpper() ?? "";
+                    string innerResponse = Console.ReadLine().Trim().ToUpper();
 
                     if (innerResponse == "Y")
                     {
                         goto Password;
                     }
+                    else if (innerResponse == "N")
+                    {
+                        goto outerResponseChoice;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Invalid Input\n");
+                        goto TryAgainAtmpt;
+                    }
                 }
             }
         }
 
-        Console.WriteLine("Could not find an account with that username.\nWould you like to try again or make an account?\n[1] Try Again\n[2] Register");
-        string? outerResponse = Console.ReadLine().Trim() ?? "";
+        Console.WriteLine("Could not find an account with that username.");
+    outerResponseChoice:
+        Console.WriteLine("Would you like to try logging in again or make an account?\n[1] Try Again\n[2] Register");
+        string outerResponse = Console.ReadLine().Trim();
 
         if (outerResponse == "1")
         {
@@ -114,16 +123,18 @@ public class MainMenu
             User customer = Register();
             return customer;
         }
-
-        return null;
-
+        else
+        {
+            Console.WriteLine("Invalid Input\n");
+            goto outerResponseChoice;
+        }
     }
 
     public User Register()
     {
     Register:
         Console.WriteLine("Enter a Username: ");
-        string? userName = Console.ReadLine().Trim() ?? "";
+        string userName = Console.ReadLine().Trim();
 
         List<User> users = _bl.GetAllUsers();
 
@@ -131,19 +142,28 @@ public class MainMenu
         {
             if (user.UserName == userName)
             {
+            TryAgainResponse:
                 Console.WriteLine("That username is already taken!\nTry Again?[Y/N]");
-                string? response = Console.ReadLine().Trim().ToUpper() ?? "";
+                string response = Console.ReadLine().Trim().ToUpper();
 
                 if (response == "N")
                 {
                     return null;
                 }
-                goto Register;
+                else if (response == "Y")
+                {
+                    goto Register;
+                }
+                else
+                {
+                    Console.WriteLine("Invalid input\n");
+                    goto TryAgainResponse;
+                }
             }
         }
 
         Console.WriteLine("Enter a Password");
-        string? password = Console.ReadLine().Trim() ?? "";
+        string password = Console.ReadLine().Trim();
 
         User newUser = new User();
 

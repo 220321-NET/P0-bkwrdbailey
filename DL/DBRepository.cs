@@ -12,6 +12,13 @@ public class DBRepository
     {
         _connectionString = connectionString;
     }
+
+    /// <summary>
+    /// Creates a product list that acts as the store's inventory to hold the returned record results from the SQL call
+    /// that is read through
+    /// </summary>
+    /// <param name="currentStore">The instance of the current store the user selected</param>
+    /// <returns>List of the current store's inventory</returns>
     public Store GetStoreInventory(Store currentStore)
     {
 
@@ -47,6 +54,12 @@ public class DBRepository
         return currentStore;
     }
 
+    /// <summary>
+    /// Creates a User list that holds instances that to each individual user record in the database
+    /// acquired from a sql call that is read through
+    /// Also adds either a User instance or an Employee instance to the return list based on the IsEmployed boolean value
+    /// </summary>
+    /// <returns>A list of all the users in the Azure Database</returns>
     public List<User> GetAllUsers()
     {
 
@@ -65,7 +78,6 @@ public class DBRepository
             string password = reader.GetString(2);
             bool _isEmployed = reader.GetBoolean(3);
 
-            // Creates new employee or customer object based on employment status
             if (_isEmployed == true)
             {
                 Employee employee = new Employee
@@ -96,6 +108,10 @@ public class DBRepository
         return users;
     }
 
+    /// <summary>
+    /// Adds every store record in the database to a stores list to be returned individual store interaction
+    /// </summary>
+    /// <returns>A list of all the stores from the Azure Database</returns>
     public List<Store> GetAllStores()
     {
         List<Store> stores = new List<Store>();
@@ -128,6 +144,11 @@ public class DBRepository
         return stores;
     }
 
+    /// <summary>
+    /// Adds a user to the Azure database and gives the generated id from the database to the user object for identification
+    /// </summary>
+    /// <param name="userToAdd">Instance made from a user registering for a new account</param>
+    /// <returns>The user instance that was added to the database</returns>
     public User CreateUser(User userToAdd)
     {
         SqlConnection connection = new SqlConnection(_connectionString);
@@ -152,6 +173,10 @@ public class DBRepository
         return userToAdd;
     }
 
+    /// <summary>
+    /// Takes a new created order instance and inserts a record of it into the Azure database
+    /// </summary>
+    /// <param name="order">The instance of order that will be added to the database</param>
     public void CreateOrder(Order order)
     {
         DateTime currentDate = DateTime.Now;
@@ -178,6 +203,11 @@ public class DBRepository
         CreateCart(order);
     }
 
+    /// <summary>
+    /// Each product ordered by the user is added individually as a record to the Azure database and tied
+    /// together by their shared order id
+    /// </summary>
+    /// <param name="order">An instance of Order used for cart creation</param>
     private void CreateCart(Order order)
     {
         SqlConnection connection = new SqlConnection(_connectionString);
@@ -199,6 +229,11 @@ public class DBRepository
         UpdateInventory(order);
     }
 
+    /// <summary>
+    /// The inventory tied to a specific store is updated based on the Store instance field in the order instance
+    /// which has the updated inventory to be used for updating the inventory table in the Azure database
+    /// </summary>
+    /// <param name="order">Instance of order passed along for inventory updating</param>
     private void UpdateInventory(Order order)
     {
         SqlConnection connection = new SqlConnection(_connectionString);
