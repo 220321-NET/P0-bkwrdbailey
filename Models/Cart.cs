@@ -2,7 +2,8 @@ namespace Models;
 
 public class Cart
 {
-    private List<Product> Contents { get; set; } = new List<Product>();
+
+    private List<Product> Contents { get; set; } = new List<Product>(){};
 
     private double TotalCost { get; set; } = 0.00;
 
@@ -55,8 +56,6 @@ public class Cart
 
     public void CartContents()
     {
-        string cartContents;
-
         int i = 1;
         foreach (Product product in Contents)
         {

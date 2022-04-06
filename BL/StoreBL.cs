@@ -20,7 +20,8 @@ public class StoreBL
         return _repo.CreateUser(userToAdd);
     }
 
-    public void AddOrder(Order order) {
+    public void AddOrder(Order order)
+    {
         _repo.CreateOrder(order);
     }
 
@@ -34,4 +35,15 @@ public class StoreBL
         return _repo.GetStoreInventory(currentStore);
     }
 
+    public List<OrderHistory> GetOrderHistoryByStore(Store _store)
+    {
+        List<OrderHistory> storeOrderHistory = _repo.GetOrderHistoryByStore(_store);
+        return storeOrderHistory;
+    }
+
+    public List<OrderHistory> GetOrderHistoryByUser(User user)
+    {
+        List<OrderHistory> userOrderHistory = _repo.GetOrderHistoryByUser(user);
+        return userOrderHistory;
+    }
 }
