@@ -6,12 +6,12 @@ namespace UI;
 
 public class CustomerMenu
 {
-    private readonly StoreBL _bl;
+    private readonly IStoreBL _bl;
     private User _user = new User();
     private Cart cart = new Cart();
     private Store currentStore = new Store();
 
-    public CustomerMenu(StoreBL bl, User user)
+    public CustomerMenu(IStoreBL bl, User user)
     {
         _bl = bl;
         _user = user;
@@ -52,7 +52,7 @@ public class CustomerMenu
             ViewOrderHistory();
             goto StoreLocation;
         }
-        else if (storeAnswer == "x")
+        else if (storeAnswer.ToLower() == "x")
         {
             return;
         }
@@ -82,7 +82,7 @@ public class CustomerMenu
         Console.WriteLine("[6] Change store location");
         Console.WriteLine("[x] Logout");
 
-        string choice = Console.ReadLine().Trim();
+        string choice = Console.ReadLine().Trim().ToLower();
         Console.WriteLine("==================================================================");
 
         switch (choice)

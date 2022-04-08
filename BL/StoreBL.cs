@@ -2,10 +2,10 @@
 using Models;
 
 namespace BL;
-public class StoreBL
+public class StoreBL : IStoreBL
 {
-    private readonly DBRepository _repo;
-    public StoreBL(DBRepository repo)
+    private readonly IRepository _repo;
+    public StoreBL(IRepository repo)
     {
         _repo = repo;
     }

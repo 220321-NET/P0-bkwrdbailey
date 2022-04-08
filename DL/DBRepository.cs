@@ -3,9 +3,8 @@ using System.Data;
 using Models;
 
 namespace DL;
-public class DBRepository
+public class DBRepository : IRepository
 {
-
     private readonly string _connectionString;
 
     public DBRepository(string connectionString)
@@ -78,28 +77,14 @@ public class DBRepository
             string password = reader.GetString(2);
             bool _isEmployed = reader.GetBoolean(3);
 
-            if (_isEmployed == true)
+            User user = new User
             {
-                Employee employee = new Employee
-                {
-                    Id = id,
-                    UserName = userName,
-                    Password = password,
-                    IsEmployed = _isEmployed,
-                };
-                users.Add(employee);
-            }
-            else
-            {
-                User customer = new User
-                {
-                    Id = id,
-                    UserName = userName,
-                    Password = password,
-                    IsEmployed = _isEmployed
-                };
-                users.Add(customer);
-            }
+                Id = id,
+                UserName = userName,
+                Password = password,
+                IsEmployed = _isEmployed
+            };
+            users.Add(user);
         }
 
         reader.Close();
@@ -142,6 +127,121 @@ public class DBRepository
         connection.Close();
 
         return stores;
+    }
+
+
+    /// <summary>
+    /// The order history for a specific user is acquired from the Azure Database and passed into new individual OrderHistory objects
+    /// that show that user's overall order history for every store
+    /// </summary>
+    /// <param name="user">The current User object that is interacting with the application</param>
+    /// <returns>A list of OrderHistory objects populated from a SQL call</returns>
+    public List<OrderHistory> GetOrderHistoryByUser(User user)
+    {
+        List<OrderHistory> userOrderHistory = new List<OrderHistory>();
+        List<Store> stores = GetAllStores();
+
+        SqlConnection connection = new SqlConnection(_connectionString);
+        connection.Open();
+
+        SqlCommand cmd = new SqlCommand("SELECT Orders.Id, StoreFrontId, CustomerId, DateOrdered, Quantity, Product.Name, Product.Price, TotalCost FROM Orders JOIN Cart ON (Cart.OrderId = Orders.Id) JOIN StoreFront ON (StoreFront.Id = Orders.StoreFrontId) JOIN Product ON (Product.Id = Cart.ProductId) WHERE CustomerId = @customerId ORDER BY StoreFrontId;", connection);
+        cmd.Parameters.AddWithValue("@customerId", user.Id);
+
+        SqlDataReader reader = cmd.ExecuteReader();
+
+        while (reader.Read())
+        {
+            int id = reader.GetInt32(0);
+            int storeId = reader.GetInt32(1);
+            DateTime date = reader.GetDateTime(3);
+            int itemQty = reader.GetInt32(4);
+            string itemName = reader.GetString(5);
+            double itemPrice = reader.GetDouble(6);
+            double totalCost = reader.GetDouble(7);
+
+            OrderHistory order = new OrderHistory
+            {
+                OrderId = id,
+                ProductName = itemName,
+                StoreId = storeId,
+                TotalCost = totalCost,
+                ItemPrice = itemPrice,
+                ItemQty = itemQty,
+                DateOrdered = date,
+            };
+
+            foreach (Store store in stores)
+            {
+                if (store.Id == storeId)
+                {
+                    order.store = store;
+                    break;
+                }
+            }
+
+            userOrderHistory.Add(order);
+        }
+        connection.Close();
+
+        return userOrderHistory;
+    }
+
+    /// <summary>
+    /// Uses a Store object to acquire that store's order history data from the Azure Database to be be added to individual OrderHistory objects
+    /// that will show that single store's overall order history
+    /// </summary>
+    /// <param name="_store">The current Store object thats order history is being requested</param>
+    /// <returns>Gives back a list of OrderHistory objects based on a specific store</returns>
+    public List<OrderHistory> GetOrderHistoryByStore(Store _store)
+    {
+        List<OrderHistory> storeOrderHistory = new List<OrderHistory>();
+        List<User> users = GetAllUsers();
+
+        SqlConnection connection = new SqlConnection(_connectionString);
+        connection.Open();
+
+        SqlCommand cmd = new SqlCommand("SELECT Orders.Id, CustomerId, DateOrdered, Quantity, Product.Name, TotalCost, StoreFrontId, Price FROM Orders JOIN Cart ON (Cart.OrderId = Orders.Id) JOIN StoreFront ON (StoreFront.Id = Orders.StoreFrontId) JOIN Product ON (Product.Id = Cart.ProductId) WHERE StoreFrontId = @storeId ORDER BY StoreFrontId;", connection);
+        cmd.Parameters.AddWithValue("@storeId", _store.Id);
+
+        SqlDataReader reader = cmd.ExecuteReader();
+
+        while (reader.Read())
+        {
+            int id = reader.GetInt32(0);
+            int customerId = reader.GetInt32(1);
+            DateTime date = reader.GetDateTime(2);
+            int itemQty = reader.GetInt32(3);
+            string itemName = reader.GetString(4);
+            double totalCost = reader.GetDouble(5);
+            int storeId = reader.GetInt32(6);
+            double itemPrice = reader.GetDouble(7);
+
+            OrderHistory order = new OrderHistory
+            {
+                OrderId = id,
+                ProductName = itemName,
+                StoreId = storeId,
+                TotalCost = totalCost,
+                ItemQty = itemQty,
+                DateOrdered = date,
+                ItemPrice = itemPrice
+            };
+
+            foreach (User user in users)
+            {
+                if (customerId == user.Id)
+                {
+                    order.customer = user;
+                    break;
+                }
+            }
+            storeOrderHistory.Add(order);
+        }
+
+        reader.Close();
+        connection.Close();
+
+        return storeOrderHistory;
     }
 
     /// <summary>
@@ -208,7 +308,7 @@ public class DBRepository
     /// together by their shared order id
     /// </summary>
     /// <param name="order">An instance of Order used for cart creation</param>
-    private void CreateCart(Order order)
+    public void CreateCart(Order order)
     {
         SqlConnection connection = new SqlConnection(_connectionString);
         connection.Open();
@@ -229,12 +329,17 @@ public class DBRepository
         UpdateInventory(order);
     }
 
+    public void AddProduct(Product product)
+    {
+        // Add new product to database
+    }
+
     /// <summary>
     /// The inventory tied to a specific store is updated based on the Store instance field in the order instance
     /// which has the updated inventory to be used for updating the inventory table in the Azure database
     /// </summary>
     /// <param name="order">Instance of order passed along for inventory updating</param>
-    private void UpdateInventory(Order order)
+    public void UpdateInventory(Order order)
     {
         SqlConnection connection = new SqlConnection(_connectionString);
         connection.Open();
@@ -251,105 +356,5 @@ public class DBRepository
         }
 
         connection.Close();
-    }
-
-    public List<OrderHistory> GetOrderHistoryByUser(User user)
-    {
-        List<OrderHistory> userOrderHistory = new List<OrderHistory>();
-        List<Store> stores = GetAllStores();
-
-        SqlConnection connection = new SqlConnection(_connectionString);
-        connection.Open();
-
-        SqlCommand cmd = new SqlCommand("SELECT Orders.Id, StoreFrontId, CustomerId, DateOrdered, Quantity, Product.Name, Product.Price, TotalCost FROM Orders JOIN Cart ON (Cart.OrderId = Orders.Id) JOIN StoreFront ON (StoreFront.Id = Orders.StoreFrontId) JOIN Product ON (Product.Id = Cart.ProductId) WHERE CustomerId = @customerId ORDER BY StoreFrontId;", connection);
-        cmd.Parameters.AddWithValue("@customerId", user.Id);
-
-        SqlDataReader reader = cmd.ExecuteReader();
-
-        while (reader.Read())
-        {
-            int id = reader.GetInt32(0);
-            int storeId = reader.GetInt32(1);
-            DateTime date = reader.GetDateTime(3);
-            int itemQty = reader.GetInt32(4);
-            string itemName = reader.GetString(5);
-            double itemPrice = reader.GetDouble(6);
-            double totalCost = reader.GetDouble(7);
-
-            OrderHistory order = new OrderHistory
-            {
-                OrderId = id,
-                ProductName = itemName,
-                StoreId = storeId,
-                TotalCost = totalCost,
-                ItemPrice = itemPrice,
-                ItemQty = itemQty,
-                DateOrdered = date,
-            };
-
-            foreach (Store store in stores)
-            {
-                if (store.Id == storeId)
-                {
-                    order.store = store;
-                    break;
-                }
-            }
-
-            userOrderHistory.Add(order);
-        }
-        connection.Close();
-
-        return userOrderHistory;
-    }
-
-    public List<OrderHistory> GetOrderHistoryByStore(Store _store)
-    {
-        List<OrderHistory> storeOrderHistory = new List<OrderHistory>();
-        List<User> users = GetAllUsers();
-
-        SqlConnection connection = new SqlConnection(_connectionString);
-        connection.Open();
-
-        SqlCommand cmd = new SqlCommand("SELECT Orders.Id, CustomerId, DateOrdered, Quantity, Product.Name, TotalCost, StoreFrontId FROM Orders JOIN Cart ON (Cart.OrderId = Orders.Id) JOIN StoreFront ON (StoreFront.Id = Orders.StoreFrontId) JOIN Product ON (Product.Id = Cart.ProductId) WHERE StoreFrontId = @storeId ORDER BY StoreFrontId;", connection);
-        cmd.Parameters.AddWithValue("@storeId", _store.Id);
-
-        SqlDataReader reader = cmd.ExecuteReader();
-
-        while (reader.Read())
-        {
-            int id = reader.GetInt32(0);
-            int customerId = reader.GetInt32(1);
-            DateTime date = reader.GetDateTime(2);
-            int itemQty = reader.GetInt32(3);
-            string itemName = reader.GetString(4);
-            double totalCost = reader.GetDouble(5);
-            int storeId = reader.GetInt32(6);
-
-            OrderHistory order = new OrderHistory
-            {
-                OrderId = id,
-                ProductName = itemName,
-                StoreId = storeId,
-                TotalCost = totalCost,
-                ItemQty = itemQty,
-                DateOrdered = date,
-            };
-
-            foreach (User user in users)
-            {
-                if (customerId == user.Id)
-                {
-                    order.customer = user;
-                    break;
-                }
-            }
-            storeOrderHistory.Add(order);
-        }
-
-        reader.Close();
-        connection.Close();
-
-        return storeOrderHistory;
     }
 }

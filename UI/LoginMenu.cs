@@ -3,16 +3,16 @@ using BL;
 
 namespace UI;
 
-public class MainMenu
+public class LoginMenu
 {
 
-    private readonly StoreBL _bl;
-    public MainMenu(StoreBL bl)
+    private readonly IStoreBL _bl;
+    public LoginMenu(IStoreBL bl)
     {
         _bl = bl;
     }
 
-    public void LoginMenu()
+    public void Menu()
     {
         Console.WriteLine("=========================================\n====== Just Another Computer Store ======\n=========================================\n");
 
@@ -52,7 +52,7 @@ public class MainMenu
             if (user.IsEmployed == true)
             {
                 Employee employee = (Employee)user;
-                new EmployeeMenu(_bl, employee).Menu();
+                new EmployeeMenu(_bl, employee).AdminMenu();
             }
             else
             {
